@@ -134,6 +134,298 @@ pub const IO_STATUS_BLOCK = windows.IO_STATUS_BLOCK;
 pub const NTSTATUS = windows.NTSTATUS;
 pub const OBJECT_ATTRIBUTES = windows.OBJECT.ATTRIBUTES;
 
+// Window management (user32/gdi32/opengl32) types used by the Win32 apprt
+// and the WGL OpenGL context.
+pub const ATOM = windows.ATOM;
+pub const HBRUSH = windows.HBRUSH;
+pub const HCURSOR = windows.HCURSOR;
+pub const HDC = windows.HDC;
+pub const HGLRC = windows.HGLRC;
+pub const HICON = windows.HICON;
+pub const HMENU = windows.HMENU;
+pub const HMODULE = windows.HMODULE;
+pub const HWND = windows.HWND;
+pub const LONG = windows.LONG;
+pub const LPARAM = windows.LPARAM;
+pub const LRESULT = isize;
+pub const WORD = windows.WORD;
+pub const WPARAM = usize;
+pub const HGLOBAL = *anyopaque;
+pub const DPI_AWARENESS_CONTEXT = isize;
+/// A procedure address returned by GetProcAddress/wglGetProcAddress.
+/// Kept opaque (align 1) because wglGetProcAddress may return sentinel
+/// values such as 1, 2, 3 or -1 that are not valid function pointers.
+pub const PROC = *const anyopaque;
+
+pub const WNDPROC = *const fn (
+    hwnd: HWND,
+    msg: UINT,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) callconv(.winapi) LRESULT;
+
+pub const POINT = extern struct {
+    x: LONG,
+    y: LONG,
+};
+
+pub const RECT = extern struct {
+    left: LONG,
+    top: LONG,
+    right: LONG,
+    bottom: LONG,
+};
+
+pub const MSG = extern struct {
+    hwnd: ?HWND,
+    message: UINT,
+    wParam: WPARAM,
+    lParam: LPARAM,
+    time: DWORD,
+    pt: POINT,
+    lPrivate: DWORD,
+};
+
+pub const WNDCLASSEXW = extern struct {
+    cbSize: UINT = @sizeOf(WNDCLASSEXW),
+    style: UINT = 0,
+    lpfnWndProc: WNDPROC,
+    cbClsExtra: c_int = 0,
+    cbWndExtra: c_int = 0,
+    hInstance: ?HINSTANCE = null,
+    hIcon: ?HICON = null,
+    hCursor: ?HCURSOR = null,
+    hbrBackground: ?HBRUSH = null,
+    lpszMenuName: ?LPCWSTR = null,
+    lpszClassName: LPCWSTR,
+    hIconSm: ?HICON = null,
+};
+
+pub const PAINTSTRUCT = extern struct {
+    hdc: HDC,
+    fErase: BOOL,
+    rcPaint: RECT,
+    fRestore: BOOL,
+    fIncUpdate: BOOL,
+    rgbReserved: [32]u8,
+};
+
+pub const PIXELFORMATDESCRIPTOR = extern struct {
+    nSize: WORD = @sizeOf(PIXELFORMATDESCRIPTOR),
+    nVersion: WORD = 1,
+    dwFlags: DWORD = 0,
+    iPixelType: u8 = 0,
+    cColorBits: u8 = 0,
+    cRedBits: u8 = 0,
+    cRedShift: u8 = 0,
+    cGreenBits: u8 = 0,
+    cGreenShift: u8 = 0,
+    cBlueBits: u8 = 0,
+    cBlueShift: u8 = 0,
+    cAlphaBits: u8 = 0,
+    cAlphaShift: u8 = 0,
+    cAccumBits: u8 = 0,
+    cAccumRedBits: u8 = 0,
+    cAccumGreenBits: u8 = 0,
+    cAccumBlueBits: u8 = 0,
+    cAccumAlphaBits: u8 = 0,
+    cDepthBits: u8 = 0,
+    cStencilBits: u8 = 0,
+    cAuxBuffers: u8 = 0,
+    iLayerType: u8 = 0,
+    bReserved: u8 = 0,
+    dwLayerMask: DWORD = 0,
+    dwVisibleMask: DWORD = 0,
+    dwDamageMask: DWORD = 0,
+};
+
+pub const BITMAPINFOHEADER = extern struct {
+    biSize: DWORD = @sizeOf(BITMAPINFOHEADER),
+    biWidth: LONG,
+    biHeight: LONG,
+    biPlanes: WORD = 1,
+    biBitCount: WORD,
+    biCompression: DWORD = BI_RGB,
+    biSizeImage: DWORD = 0,
+    biXPelsPerMeter: LONG = 0,
+    biYPelsPerMeter: LONG = 0,
+    biClrUsed: DWORD = 0,
+    biClrImportant: DWORD = 0,
+};
+
+pub const BITMAPINFO = extern struct {
+    bmiHeader: BITMAPINFOHEADER,
+    bmiColors: [1]DWORD = .{0},
+};
+
+pub const TRACKMOUSEEVENT = extern struct {
+    cbSize: DWORD = @sizeOf(TRACKMOUSEEVENT),
+    dwFlags: DWORD,
+    hwndTrack: HWND,
+    dwHoverTime: DWORD = 0,
+};
+
+// Window messages
+pub const WM_NULL = 0x0000;
+pub const WM_CREATE = 0x0001;
+pub const WM_DESTROY = 0x0002;
+pub const WM_SIZE = 0x0005;
+pub const WM_SETFOCUS = 0x0007;
+pub const WM_KILLFOCUS = 0x0008;
+pub const WM_PAINT = 0x000F;
+pub const WM_CLOSE = 0x0010;
+pub const WM_ERASEBKGND = 0x0014;
+pub const WM_SETCURSOR = 0x0020;
+pub const WM_GETMINMAXINFO = 0x0024;
+pub const WM_NCCREATE = 0x0081;
+pub const WM_KEYDOWN = 0x0100;
+pub const WM_KEYUP = 0x0101;
+pub const WM_CHAR = 0x0102;
+pub const WM_DEADCHAR = 0x0103;
+pub const WM_SYSKEYDOWN = 0x0104;
+pub const WM_SYSKEYUP = 0x0105;
+pub const WM_SYSCHAR = 0x0106;
+pub const WM_SYSDEADCHAR = 0x0107;
+pub const WM_UNICHAR = 0x0109;
+pub const WM_TIMER = 0x0113;
+pub const WM_MOUSEMOVE = 0x0200;
+pub const WM_LBUTTONDOWN = 0x0201;
+pub const WM_LBUTTONUP = 0x0202;
+pub const WM_RBUTTONDOWN = 0x0204;
+pub const WM_RBUTTONUP = 0x0205;
+pub const WM_MBUTTONDOWN = 0x0207;
+pub const WM_MBUTTONUP = 0x0208;
+pub const WM_MOUSEWHEEL = 0x020A;
+pub const WM_XBUTTONDOWN = 0x020B;
+pub const WM_XBUTTONUP = 0x020C;
+pub const WM_MOUSEHWHEEL = 0x020E;
+pub const WM_MOUSELEAVE = 0x02A3;
+pub const WM_DPICHANGED = 0x02E0;
+pub const WM_USER = 0x0400;
+
+// Window styles
+pub const WS_OVERLAPPEDWINDOW = 0x00CF0000;
+pub const WS_POPUP = 0x80000000;
+pub const WS_EX_APPWINDOW = 0x00040000;
+pub const WS_EX_TOOLWINDOW = 0x00000080;
+pub const CS_HREDRAW = 0x0002;
+pub const CS_VREDRAW = 0x0001;
+pub const CS_OWNDC = 0x0020;
+pub const CW_USEDEFAULT: c_int = @bitCast(@as(u32, 0x80000000));
+pub const HWND_MESSAGE: HWND = @ptrFromInt(@as(usize, @bitCast(@as(isize, -3))));
+pub const GWLP_USERDATA = -21;
+pub const SW_HIDE = 0;
+pub const SW_SHOW = 5;
+pub const SW_SHOWDEFAULT = 10;
+pub const SW_MAXIMIZE = 3;
+pub const SW_RESTORE = 9;
+pub const SIZE_MINIMIZED = 1;
+pub const PM_REMOVE = 0x0001;
+pub const PM_NOREMOVE = 0x0000;
+pub const HTCLIENT = 1;
+pub const TME_LEAVE = 0x00000002;
+pub const MK_SHIFT = 0x0004;
+pub const MK_CONTROL = 0x0008;
+pub const WHEEL_DELTA = 120;
+pub const SWP_NOZORDER = 0x0004;
+pub const SWP_NOACTIVATE = 0x0010;
+pub const SWP_NOMOVE = 0x0002;
+pub const SWP_FRAMECHANGED = 0x0020;
+pub const GWL_STYLE = -16;
+pub const MONITOR_DEFAULTTONEAREST = 0x00000002;
+pub const USER_DEFAULT_SCREEN_DPI = 96;
+pub const DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2: DPI_AWARENESS_CONTEXT = -4;
+pub const MB_OK = 0x00000000;
+pub const MB_YESNO = 0x00000004;
+pub const MB_ICONERROR = 0x00000010;
+pub const MB_ICONWARNING = 0x00000030;
+pub const IDYES = 6;
+pub const XBUTTON1 = 0x0001;
+pub const XBUTTON2 = 0x0002;
+
+/// The result of MAKEINTRESOURCEW: an integer resource ID passed where
+/// a string is expected. These are not aligned so they can't be LPCWSTR.
+pub const LPCWSTR_RESOURCE = [*:0]align(1) const u16;
+
+// Cursors (MAKEINTRESOURCE values)
+pub const IDC_ARROW: LPCWSTR_RESOURCE = @ptrFromInt(32512);
+pub const IDC_IBEAM: LPCWSTR_RESOURCE = @ptrFromInt(32513);
+pub const IDC_WAIT: LPCWSTR_RESOURCE = @ptrFromInt(32514);
+pub const IDC_CROSS: LPCWSTR_RESOURCE = @ptrFromInt(32515);
+pub const IDC_SIZENWSE: LPCWSTR_RESOURCE = @ptrFromInt(32642);
+pub const IDC_SIZENESW: LPCWSTR_RESOURCE = @ptrFromInt(32643);
+pub const IDC_SIZEWE: LPCWSTR_RESOURCE = @ptrFromInt(32644);
+pub const IDC_SIZENS: LPCWSTR_RESOURCE = @ptrFromInt(32645);
+pub const IDC_SIZEALL: LPCWSTR_RESOURCE = @ptrFromInt(32646);
+pub const IDC_NO: LPCWSTR_RESOURCE = @ptrFromInt(32648);
+pub const IDC_HAND: LPCWSTR_RESOURCE = @ptrFromInt(32649);
+pub const IDC_APPSTARTING: LPCWSTR_RESOURCE = @ptrFromInt(32650);
+pub const IDC_HELP: LPCWSTR_RESOURCE = @ptrFromInt(32651);
+pub const IDI_APPLICATION: LPCWSTR_RESOURCE = @ptrFromInt(32512);
+
+// Virtual keys
+pub const VK_BACK = 0x08;
+pub const VK_SHIFT = 0x10;
+pub const VK_CONTROL = 0x11;
+pub const VK_MENU = 0x12;
+pub const VK_CAPITAL = 0x14;
+pub const VK_PROCESSKEY = 0xE5;
+pub const VK_LWIN = 0x5B;
+pub const VK_RWIN = 0x5C;
+pub const VK_NUMLOCK = 0x90;
+pub const VK_LSHIFT = 0xA0;
+pub const VK_RSHIFT = 0xA1;
+pub const VK_LCONTROL = 0xA2;
+pub const VK_RCONTROL = 0xA3;
+pub const VK_LMENU = 0xA4;
+pub const VK_RMENU = 0xA5;
+pub const MAPVK_VK_TO_CHAR = 2;
+
+// Clipboard
+pub const CF_UNICODETEXT = 13;
+pub const GMEM_MOVEABLE = 0x0002;
+
+// GDI/WGL
+pub const BI_RGB = 0;
+pub const DIB_RGB_COLORS = 0;
+pub const SRCCOPY = 0x00CC0020;
+pub const PFD_DRAW_TO_WINDOW = 0x00000004;
+pub const PFD_SUPPORT_OPENGL = 0x00000020;
+pub const PFD_DOUBLEBUFFER = 0x00000001;
+pub const PFD_TYPE_RGBA = 0;
+pub const PFD_MAIN_PLANE = 0;
+pub const WGL_CONTEXT_MAJOR_VERSION_ARB = 0x2091;
+pub const WGL_CONTEXT_MINOR_VERSION_ARB = 0x2092;
+pub const WGL_CONTEXT_FLAGS_ARB = 0x2094;
+pub const WGL_CONTEXT_PROFILE_MASK_ARB = 0x9126;
+pub const WGL_CONTEXT_CORE_PROFILE_BIT_ARB = 0x00000001;
+pub const WGL_CONTEXT_DEBUG_BIT_ARB = 0x00000001;
+
+/// Signature of the wglCreateContextAttribsARB extension function.
+pub const PFNWGLCREATECONTEXTATTRIBSARBPROC = *const fn (
+    hdc: HDC,
+    hShareContext: ?HGLRC,
+    attribList: [*]const c_int,
+) callconv(.winapi) ?HGLRC;
+
+pub fn LOWORD(v: anytype) u16 {
+    return @truncate(@as(usize, @bitCast(v)));
+}
+
+pub fn HIWORD(v: anytype) u16 {
+    return @truncate(@as(usize, @bitCast(v)) >> 16);
+}
+
+/// GET_X_LPARAM: the signed low word of an LPARAM.
+pub fn GET_X_LPARAM(v: LPARAM) i16 {
+    return @bitCast(LOWORD(v));
+}
+
+/// GET_Y_LPARAM: the signed high word of an LPARAM.
+pub fn GET_Y_LPARAM(v: LPARAM) i16 {
+    return @bitCast(HIWORD(v));
+}
+
 // Exported functions by library
 pub const exp = struct {
     pub const kernel32 = struct {
@@ -274,6 +566,186 @@ pub const exp = struct {
             cchFilePath: DWORD,
             dwFlags: DWORD,
         ) callconv(.winapi) DWORD;
+        pub extern "kernel32" fn GetModuleHandleW(
+            lpModuleName: ?LPCWSTR,
+        ) callconv(.winapi) ?HMODULE;
+        pub extern "kernel32" fn LoadLibraryA(
+            lpLibFileName: [*:0]const u8,
+        ) callconv(.winapi) ?HMODULE;
+        pub extern "kernel32" fn GetProcAddress(
+            hModule: HMODULE,
+            lpProcName: [*:0]const u8,
+        ) callconv(.winapi) ?PROC;
+        pub extern "kernel32" fn GlobalAlloc(
+            uFlags: UINT,
+            dwBytes: SIZE_T,
+        ) callconv(.winapi) ?HGLOBAL;
+        pub extern "kernel32" fn GlobalFree(hMem: HGLOBAL) callconv(.winapi) ?HGLOBAL;
+        pub extern "kernel32" fn GlobalLock(hMem: HGLOBAL) callconv(.winapi) ?LPVOID;
+        pub extern "kernel32" fn GlobalUnlock(hMem: HGLOBAL) callconv(.winapi) BOOL;
+        pub extern "kernel32" fn GlobalSize(hMem: HGLOBAL) callconv(.winapi) SIZE_T;
+    };
+    pub const user32 = struct {
+        pub extern "user32" fn RegisterClassExW(
+            lpWndClass: *const WNDCLASSEXW,
+        ) callconv(.winapi) ATOM;
+        pub extern "user32" fn CreateWindowExW(
+            dwExStyle: DWORD,
+            lpClassName: LPCWSTR,
+            lpWindowName: ?LPCWSTR,
+            dwStyle: DWORD,
+            X: c_int,
+            Y: c_int,
+            nWidth: c_int,
+            nHeight: c_int,
+            hWndParent: ?HWND,
+            hMenu: ?HMENU,
+            hInstance: ?HINSTANCE,
+            lpParam: ?LPVOID,
+        ) callconv(.winapi) ?HWND;
+        pub extern "user32" fn DestroyWindow(hWnd: HWND) callconv(.winapi) BOOL;
+        pub extern "user32" fn ShowWindow(hWnd: HWND, nCmdShow: c_int) callconv(.winapi) BOOL;
+        pub extern "user32" fn IsZoomed(hWnd: HWND) callconv(.winapi) BOOL;
+        pub extern "user32" fn DefWindowProcW(
+            hWnd: HWND,
+            Msg: UINT,
+            wParam: WPARAM,
+            lParam: LPARAM,
+        ) callconv(.winapi) LRESULT;
+        pub extern "user32" fn GetMessageW(
+            lpMsg: *MSG,
+            hWnd: ?HWND,
+            wMsgFilterMin: UINT,
+            wMsgFilterMax: UINT,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn PeekMessageW(
+            lpMsg: *MSG,
+            hWnd: ?HWND,
+            wMsgFilterMin: UINT,
+            wMsgFilterMax: UINT,
+            wRemoveMsg: UINT,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn TranslateMessage(lpMsg: *const MSG) callconv(.winapi) BOOL;
+        pub extern "user32" fn DispatchMessageW(lpMsg: *const MSG) callconv(.winapi) LRESULT;
+        pub extern "user32" fn PostMessageW(
+            hWnd: ?HWND,
+            Msg: UINT,
+            wParam: WPARAM,
+            lParam: LPARAM,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn PostQuitMessage(nExitCode: c_int) callconv(.winapi) void;
+        pub extern "user32" fn GetDC(hWnd: ?HWND) callconv(.winapi) ?HDC;
+        pub extern "user32" fn ReleaseDC(hWnd: ?HWND, hDC: HDC) callconv(.winapi) c_int;
+        pub extern "user32" fn BeginPaint(
+            hWnd: HWND,
+            lpPaint: *PAINTSTRUCT,
+        ) callconv(.winapi) ?HDC;
+        pub extern "user32" fn EndPaint(
+            hWnd: HWND,
+            lpPaint: *const PAINTSTRUCT,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn InvalidateRect(
+            hWnd: ?HWND,
+            lpRect: ?*const RECT,
+            bErase: BOOL,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn GetClientRect(hWnd: HWND, lpRect: *RECT) callconv(.winapi) BOOL;
+        pub extern "user32" fn GetWindowRect(hWnd: HWND, lpRect: *RECT) callconv(.winapi) BOOL;
+        pub extern "user32" fn SetWindowPos(
+            hWnd: HWND,
+            hWndInsertAfter: ?HWND,
+            X: c_int,
+            Y: c_int,
+            cx: c_int,
+            cy: c_int,
+            uFlags: UINT,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn AdjustWindowRectExForDpi(
+            lpRect: *RECT,
+            dwStyle: DWORD,
+            bMenu: BOOL,
+            dwExStyle: DWORD,
+            dpi: UINT,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn SetWindowTextW(
+            hWnd: HWND,
+            lpString: LPCWSTR,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn SetWindowLongPtrW(
+            hWnd: HWND,
+            nIndex: c_int,
+            dwNewLong: isize,
+        ) callconv(.winapi) isize;
+        pub extern "user32" fn GetWindowLongPtrW(
+            hWnd: HWND,
+            nIndex: c_int,
+        ) callconv(.winapi) isize;
+        pub extern "user32" fn LoadCursorW(
+            hInstance: ?HINSTANCE,
+            lpCursorName: LPCWSTR_RESOURCE,
+        ) callconv(.winapi) ?HCURSOR;
+        pub extern "user32" fn LoadIconW(
+            hInstance: ?HINSTANCE,
+            lpIconName: LPCWSTR_RESOURCE,
+        ) callconv(.winapi) ?HICON;
+        pub extern "user32" fn SetCursor(hCursor: ?HCURSOR) callconv(.winapi) ?HCURSOR;
+        pub extern "user32" fn GetKeyState(nVirtKey: c_int) callconv(.winapi) i16;
+        pub extern "user32" fn MapVirtualKeyW(uCode: UINT, uMapType: UINT) callconv(.winapi) UINT;
+        pub extern "user32" fn GetDpiForWindow(hwnd: HWND) callconv(.winapi) UINT;
+        pub extern "user32" fn SetProcessDpiAwarenessContext(
+            value: DPI_AWARENESS_CONTEXT,
+        ) callconv(.winapi) BOOL;
+        pub extern "user32" fn SetCapture(hWnd: HWND) callconv(.winapi) ?HWND;
+        pub extern "user32" fn ReleaseCapture() callconv(.winapi) BOOL;
+        pub extern "user32" fn TrackMouseEvent(lpEventTrack: *TRACKMOUSEEVENT) callconv(.winapi) BOOL;
+        pub extern "user32" fn OpenClipboard(hWndNewOwner: ?HWND) callconv(.winapi) BOOL;
+        pub extern "user32" fn CloseClipboard() callconv(.winapi) BOOL;
+        pub extern "user32" fn EmptyClipboard() callconv(.winapi) BOOL;
+        pub extern "user32" fn GetClipboardData(uFormat: UINT) callconv(.winapi) ?HANDLE;
+        pub extern "user32" fn SetClipboardData(
+            uFormat: UINT,
+            hMem: ?HANDLE,
+        ) callconv(.winapi) ?HANDLE;
+        pub extern "user32" fn MessageBeep(uType: UINT) callconv(.winapi) BOOL;
+        pub extern "user32" fn MessageBoxW(
+            hWnd: ?HWND,
+            lpText: LPCWSTR,
+            lpCaption: LPCWSTR,
+            uType: UINT,
+        ) callconv(.winapi) c_int;
+        pub extern "user32" fn SetForegroundWindow(hWnd: HWND) callconv(.winapi) BOOL;
+    };
+    pub const gdi32 = struct {
+        pub extern "gdi32" fn ChoosePixelFormat(
+            hdc: HDC,
+            ppfd: *const PIXELFORMATDESCRIPTOR,
+        ) callconv(.winapi) c_int;
+        pub extern "gdi32" fn SetPixelFormat(
+            hdc: HDC,
+            format: c_int,
+            ppfd: *const PIXELFORMATDESCRIPTOR,
+        ) callconv(.winapi) BOOL;
+        pub extern "gdi32" fn StretchDIBits(
+            hdc: HDC,
+            xDest: c_int,
+            yDest: c_int,
+            DestWidth: c_int,
+            DestHeight: c_int,
+            xSrc: c_int,
+            ySrc: c_int,
+            SrcWidth: c_int,
+            SrcHeight: c_int,
+            lpBits: ?*const anyopaque,
+            lpbmi: *const BITMAPINFO,
+            iUsage: UINT,
+            rop: DWORD,
+        ) callconv(.winapi) c_int;
+    };
+    pub const opengl32 = struct {
+        pub extern "opengl32" fn wglCreateContext(hdc: HDC) callconv(.winapi) ?HGLRC;
+        pub extern "opengl32" fn wglDeleteContext(hglrc: HGLRC) callconv(.winapi) BOOL;
+        pub extern "opengl32" fn wglMakeCurrent(hdc: ?HDC, hglrc: ?HGLRC) callconv(.winapi) BOOL;
+        pub extern "opengl32" fn wglGetProcAddress(name: [*:0]const u8) callconv(.winapi) ?PROC;
     };
     pub const ntdll = struct {
         pub extern "ntdll" fn NtCreateFile(

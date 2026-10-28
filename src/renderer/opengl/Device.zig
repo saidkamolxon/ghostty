@@ -9,9 +9,14 @@
 const Device = @This();
 
 const std = @import("std");
+const builtin = @import("builtin");
 const Allocator = std.mem.Allocator;
 const gl = @import("opengl");
 const egl = gl.egl;
+
+/// Windows uses WGL instead of EGL. WGL contexts are created per
+/// surface (see `OpenGL.init`) so the device holds no state there.
+const has_egl = builtin.os.tag != .windows;
 
 const log = std.log.scoped(.opengl);
 
@@ -28,15 +33,20 @@ pub const Options = struct {
 /// The lifecycle of this display is always managed externally, both in the
 /// cases where we were given a display as a config option, or we use the
 /// systemwide default display that is cleaned up by the OS.
-display: *egl.Display,
+display: if (has_egl) *egl.Display else void,
 
 /// The EGL config used to create surface renderer contexts. Chosen
 /// once here so that all contexts share compatible capabilities.
-config: *egl.Config,
+config: if (has_egl) *egl.Config else void,
 
 pub fn init(alloc: Allocator, options: Options) !*Device {
     const self = try alloc.create(Device);
     errdefer alloc.destroy(self);
+
+    if (comptime !has_egl) {
+        self.* = .{ .display = {}, .config = {} };
+        return self;
+    }
 
     try egl.load();
 

@@ -2,9 +2,11 @@
 pub const OpenGL = @This();
 
 const std = @import("std");
+const builtin = @import("builtin");
 const Allocator = std.mem.Allocator;
 const gl = @import("opengl");
 const egl = gl.egl;
+const wgl = @import("opengl/wgl.zig");
 const shadertoy = @import("shadertoy.zig");
 const apprt = @import("../apprt.zig");
 const font = @import("../font/main.zig");
@@ -39,6 +41,9 @@ const log = std.log.scoped(.opengl);
 pub const MIN_VERSION_MAJOR = 4;
 pub const MIN_VERSION_MINOR = 3;
 
+/// Windows has no (surfaceless) EGL, so contexts are created with WGL.
+const use_wgl = builtin.os.tag == .windows;
+
 alloc: std.mem.Allocator,
 
 /// Alpha blending mode
@@ -47,13 +52,34 @@ blending: configpkg.Config.AlphaBlending,
 /// The shared render device.
 device: *const Device,
 
-egl_context: *gl.egl.Context,
+egl_context: if (use_wgl) void else *gl.egl.Context,
+
+/// The WGL context on Windows, see `use_wgl`.
+wgl_context: if (use_wgl) wgl.Context else void,
 
 pub fn init(
     alloc: Allocator,
     device: *const Device,
     opts: rendererpkg.Options,
 ) !OpenGL {
+    if (comptime use_wgl) {
+        const context = wgl.Context.create(
+            MIN_VERSION_MAJOR,
+            MIN_VERSION_MINOR,
+        ) catch |err| {
+            log.warn("failed to create WGL context err={}", .{err});
+            return err;
+        };
+
+        return .{
+            .alloc = alloc,
+            .blending = opts.config.blending,
+            .device = device,
+            .egl_context = {},
+            .wgl_context = context,
+        };
+    }
+
     const display = device.display;
 
     // Bind to OpenGL API explicitly before we create the context,
@@ -86,10 +112,17 @@ pub fn init(
         .blending = opts.config.blending,
         .device = device,
         .egl_context = context,
+        .wgl_context = {},
     };
 }
 
 pub fn deinit(self: *OpenGL) void {
+    if (comptime use_wgl) {
+        self.wgl_context.destroy();
+        self.* = undefined;
+        return;
+    }
+
     self.device.display.releaseCurrent();
     self.egl_context.destroy(self.device.display) catch {};
     self.* = undefined;
@@ -200,6 +233,12 @@ fn prepareContext(getProcAddress: anytype) !void {
 /// function pointers so all subsequent GL work on this thread is valid.
 pub fn threadEnter(self: *OpenGL, surface: *apprt.Surface) !void {
     _ = surface;
+    if (comptime use_wgl) {
+        try self.wgl_context.makeCurrent();
+        try prepareContext(&wgl.getProcAddress);
+        return;
+    }
+
     try self.device.display.makeCurrent(null, null, self.egl_context);
     // Load our function pointers for this thread's threadlocal.
     try prepareContext(&gl.egl.getProcAddress);
@@ -209,7 +248,7 @@ pub fn threadEnter(self: *OpenGL, surface: *apprt.Surface) !void {
 /// thread; unbinds the context from this thread so it can be destroyed on
 /// the main thread.
 pub fn threadExit(self: *OpenGL) void {
-    self.device.display.releaseCurrent();
+    if (comptime use_wgl) wgl.releaseCurrent() else self.device.display.releaseCurrent();
     gl.glad.unload();
 }
 
@@ -280,8 +319,8 @@ pub fn present(
     presentation_health: rendererpkg.Health,
 ) !ExportedFrame {
     // We only export DMABUFs when the apprt can present them.
-    // Otherwise, use CPU buffers.
-    if (presentation_health == .healthy) {
+    // Otherwise, use CPU buffers. DMABUFs don't exist on Windows.
+    if (!use_wgl and presentation_health == .healthy) {
         if (target.exportDmabuf(self.device.display, self.egl_context)) |dmabuf| {
             return .{ .dmabuf = dmabuf };
         } else |_| {
@@ -292,7 +331,7 @@ pub fn present(
     return .{ .memory = .{
         .width = @intCast(target.width),
         .height = @intCast(target.height),
-        .pixels = try target.readPixelsAlloc(self.alloc),
+        .pixels = try target.readPixelsAlloc(self.alloc, ExportedFrame.Memory.format),
         .alloc = self.alloc,
     } };
 }
@@ -303,8 +342,13 @@ pub const ExportedFrame = union(enum) {
     memory: Memory,
 
     /// RGBA8 pixel data with premultiplied alpha, tightly packed
-    /// (`width * 4` bytes per row), in CPU memory.
+    /// (`width * 4` bytes per row), in CPU memory. Rows are bottom-up.
+    ///
+    /// On Windows the channel order is BGRA instead, which is what GDI
+    /// expects, so that the apprt doesn't need to swizzle every frame.
     pub const Memory = struct {
+        pub const format: gl.Texture.Format = if (use_wgl) .bgra else .rgba;
+
         width: u32,
         height: u32,
         pixels: []u8,

@@ -221,7 +221,11 @@ pub fn exportDmabuf(
 /// i.e. `width * 4` bytes per row, containing sRGB-encoded values:
 /// `GL_FRAMEBUFFER_SRGB` has no effect on `ReadPixels`, so the stored
 /// values are returned verbatim.
-pub fn readPixelsAlloc(self: *const Self, alloc: std.mem.Allocator) ![]u8 {
+pub fn readPixelsAlloc(
+    self: *const Self,
+    alloc: std.mem.Allocator,
+    format: gl.Texture.Format,
+) ![]u8 {
     const bind = try self.framebuffer.bind(.read);
     defer bind.unbind();
 
@@ -233,7 +237,7 @@ pub fn readPixelsAlloc(self: *const Self, alloc: std.mem.Allocator) ![]u8 {
         0,
         @intCast(self.width),
         @intCast(self.height),
-        .rgba,
+        format,
         .unsigned_byte,
         pixels.ptr,
     );
