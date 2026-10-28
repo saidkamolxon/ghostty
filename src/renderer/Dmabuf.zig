@@ -9,6 +9,7 @@
 //! implementations.
 pub const Dmabuf = @This();
 pub const std = @import("std");
+const builtin = @import("builtin");
 
 /// The maximum number of planes in a DMABUF that we support.
 /// This matches the maximum found in apprts such as GTK.
@@ -40,8 +41,10 @@ pub const Planes = struct {
     /// Number of planes. Valid planes are `planes[0..count]`.
     count: u8,
 
-    /// File descriptor for each plane.
-    fds: [max_planes]std.posix.fd_t = @splat(-1),
+    /// File descriptor for each plane. These are always C ints as
+    /// returned by EGL, even on targets where `std.posix.fd_t` is not
+    /// (e.g. Windows, which never produces DMABUFs).
+    fds: [max_planes]c_int = @splat(-1),
 
     /// Offset into the DMABUF where each plane starts, in bytes.
     offsets: [max_planes]c_int = @splat(0),
@@ -52,7 +55,7 @@ pub const Planes = struct {
     /// Close all valid fds.
     pub fn deinit(self: Planes) void {
         for (self.fds[0..self.count]) |fd| {
-            if (fd >= 0) _ = std.posix.system.close(fd);
+            if (fd >= 0) closeFd(fd);
         }
     }
 
@@ -63,7 +66,7 @@ pub const Planes = struct {
         var n_valid: usize = 0;
         while (n_valid < self.count) : (n_valid += 1) {
             if (self.fds[n_valid] < 0) {
-                for (self.fds[0..n_valid]) |bad| _ = std.posix.system.close(bad);
+                for (self.fds[0..n_valid]) |bad| closeFd(bad);
                 return error.BadDmabuf;
             }
         }
@@ -72,4 +75,12 @@ pub const Planes = struct {
 
 pub fn deinit(self: Dmabuf) void {
     self.planes.deinit();
+}
+
+fn closeFd(fd: c_int) void {
+    switch (comptime builtin.os.tag) {
+        // DMABUFs are a Linux concept and are never produced on Windows.
+        .windows => unreachable,
+        else => _ = std.posix.system.close(fd),
+    }
 }

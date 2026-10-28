@@ -216,8 +216,14 @@ pub fn add(
     // POSIX C imports that are used throughout Ghostty on a general basis.
     // (note: errno is C stdlib but we just include it here because that's
     // where it's generally included otherwise)
+    // Windows (MinGW and MSVC) has no pwd.h, and passwd lookups are
+    // compiled out there anyways (see src/os/passwd.zig).
     try translate_c.addImportToModule(b, "posix_c", step.root_module, .{
-        .source = .{ .includes = .{ .files = &.{
+        .source = .{ .includes = .{ .files = if (target.result.os.tag == .windows) &.{
+            .{ .path = "errno.h" },
+            .{ .path = "signal.h" },
+            .{ .path = "sys/types.h" },
+        } else &.{
             .{ .path = "errno.h" },
             .{ .path = "pwd.h" },
             .{ .path = "signal.h" },
@@ -508,7 +514,13 @@ pub fn add(
     }
 
     // Other dependencies, mostly pure Zig
-    if (b.lazyDependency("opengl", .{})) |dep| {
+    // The target must be passed so that the GL headers are translated
+    // for it. Otherwise e.g. GLsizeiptr is translated as a C long, which
+    // is 32 bits on 64-bit Windows.
+    if (b.lazyDependency("opengl", .{
+        .target = target,
+        .optimize = optimize,
+    })) |dep| {
         step.root_module.addImport("opengl", dep.module("opengl"));
     }
     if (b.lazyDependency("vaxis", .{
